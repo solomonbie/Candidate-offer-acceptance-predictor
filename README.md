@@ -8,7 +8,7 @@
 
 > A machine learning model predicting offer acceptance probability using 22 behavioural and process signals — built by a Senior Talent Acquisition Partner grounded in behavioural economics, people analytics, and talent science.
 
-**[Live Simulator →](https://solomonbie-offer-predictor.streamlit.app)** &nbsp;|&nbsp; **[Portfolio Case Study →](https://solomonobie.com/projects/offer-acceptance-modelling)** &nbsp;|&nbsp; **[Author →](https://solomonobie.com)**
+**[Live Simulator →](https://solomon-candidate-offer-acceptance-predictor.streamlit.app)** &nbsp;|&nbsp; **[Portfolio Case Study →](https://solomonobie.com/projects/offer-acceptance-modelling)** &nbsp;|&nbsp; **[Author →](https://solomonobie.com)**
 
 ---
 
@@ -230,9 +230,9 @@ joblib>=1.3
 
 ## Author
 
-**Solomon Obiechina**
-Senior Talent Acquisition Partner | Talent Scientist | People Analytics
-[solomonobie.com](https://solomonobie.com) · [LinkedIn](https://linkedin.com/in/solomonobiechina)
+**Solomon F. Torén**
+Senior Talent Partner | Talent Scientist | People Analytics
+[solomonobie.com](https://solomonobie.com) · [LinkedIn](https://linkedin.com/in/solomonobie)
 
 ---
 
