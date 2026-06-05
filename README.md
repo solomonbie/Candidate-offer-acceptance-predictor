@@ -27,7 +27,7 @@ This project asks: **what signals, all available before the offer is extended, r
 | Item | Detail |
 |---|---|
 | Algorithm | Random Forest Classifier |
-| Dataset | 2,000 synthetic candidates |
+| Dataset | 2,000 anonymized candidates data |
 | Features | 22 behavioural and process signals |
 | Target | offer_accepted (binary: 0/1) |
 | Accuracy | 75% on held-out test data |
@@ -236,4 +236,4 @@ Senior Talent Acquisition Partner | Talent Scientist | People Analytics
 
 ---
 
-*This project uses synthetic data. No real candidate data was used or stored. Built as a portfolio demonstration of applied talent science and machine learning.*
+*This project uses candidate anonymized data. No real candidate data was stored. Built as a portfolio demonstration of applied talent science and machine learning.*
