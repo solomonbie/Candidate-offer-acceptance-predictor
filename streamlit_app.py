@@ -713,9 +713,9 @@ st.markdown("""
       Built by
       <a href="https://solomonobie.com" target="_blank"
          style="color:#1A1A1A;text-decoration:none;font-weight:500;">
-        Solomon Obiechina
+        Solomon F Torèn
       </a>
-      · Senior Talent Acquisition Partner · Talent Scientist
+      · Senior Talent Partner · Talent Scientist
     </span>
   </div>
   <div style="display:flex;gap:16px;">
@@ -732,8 +732,8 @@ st.markdown("""
   </div>
 </div>
 <p style="font-size:11px;color:#bbb;margin-top:0.5rem;">
-  This tool uses a Random Forest model trained on synthetic data.
-  No candidate data is stored or transmitted. For portfolio and
+  This tool uses a Random Forest model trained on anonymized recruitment data.
+  No candidate data is stored or transmitted. For portfolio, opensource and
   educational use.
 </p>
 """, unsafe_allow_html=True)
