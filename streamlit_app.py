@@ -142,7 +142,7 @@ label { font-size:13px !important; color:#555 !important; font-weight:400 !impor
 # ── Load model ────────────────────────────────────────────────
 @st.cache_resource
 def load_model():
-    model_path   = "offer_acceptance_model.pkl"
+    model_path    = "offer_acceptance_model.pkl"
     features_path = "model_features.pkl"
 
     if not os.path.exists(model_path):
@@ -216,13 +216,11 @@ def build_input(vals):
 
 
 def get_feature_contributions(row_df, prob):
-    """Approximate contribution of each feature to the prediction."""
     importances = dict(zip(feature_names, model.feature_importances_))
     row = row_df.iloc[0]
 
     contributions = []
 
-    # Salary
     sal = row.get("salary_increase_pct", 0)
     sal_dir = 1 if sal > 10 else (-1 if sal < 0 else 0)
     sal_mag = min(abs(sal) / 30, 1.0) * importances.get("salary_increase_pct", 0)
@@ -234,7 +232,6 @@ def get_feature_contributions(row_df, prob):
             "detail": f"{sal:.1f}% lift — {'strong pull' if sal > 20 else 'modest lift' if sal > 10 else 'at-risk territory'}"
         })
 
-    # Seniority jump
     jump = row.get("seniority_jump", 0)
     if jump != 0:
         contributions.append({
@@ -244,7 +241,6 @@ def get_feature_contributions(row_df, prob):
             "detail": f"{'Promotion offer' if jump > 0 else 'Step down'} ({'+' if jump > 0 else ''}{jump} level{'s' if abs(jump) > 1 else ''})"
         })
 
-    # Stage drop risk
     sdr = row.get("stage_drop_risk", 0)
     sdr_dir = -1 if sdr > 0.4 else (1 if sdr < 0.2 else 0)
     if sdr_dir != 0:
@@ -255,7 +251,6 @@ def get_feature_contributions(row_df, prob):
             "detail": f"Stage drop risk: {sdr:.3f} — {'high concern' if sdr > 0.5 else 'moderate concern' if sdr > 0.3 else 'low concern'}"
         })
 
-    # Process speed
     proc = row.get("process_length_days", 30)
     proc_dir = 1 if proc < 21 else (-1 if proc > 55 else 0)
     if proc_dir != 0:
@@ -266,7 +261,6 @@ def get_feature_contributions(row_df, prob):
             "detail": f"{proc} days — {'fast process, positive signal' if proc < 21 else 'slow process, reducing pull'}"
         })
 
-    # Competing offer
     if row.get("competing_offers", 0) == 1:
         contributions.append({
             "feature": "Competing offer",
@@ -275,7 +269,6 @@ def get_feature_contributions(row_df, prob):
             "detail": "BATNA active — candidate is comparing, not deciding"
         })
 
-    # HM sentiment
     hm = row.get("hiring_manager_sentiment", 3)
     hm_dir = 1 if hm >= 4 else (-1 if hm <= 2.5 else 0)
     if hm_dir != 0:
@@ -286,7 +279,6 @@ def get_feature_contributions(row_df, prob):
             "detail": f"HM sentiment {hm}/5 — {'strong human connection' if hm >= 4 else 'weak connection, risk factor'}"
         })
 
-    # Months in role
     months = row.get("months_in_current_role", 24)
     months_dir = 1 if months > 36 else (-1 if months < 12 else 0)
     if months_dir != 0:
@@ -297,7 +289,6 @@ def get_feature_contributions(row_df, prob):
             "detail": f"{months} months in role — {'ready to move' if months > 36 else 'reluctant mover, under 12 months'}"
         })
 
-    # NPS
     nps = row.get("candidate_nps", 0)
     nps_dir = 1 if nps > 50 else (-1 if nps < 0 else 0)
     if nps_dir != 0:
@@ -308,13 +299,11 @@ def get_feature_contributions(row_df, prob):
             "detail": f"NPS {nps} — {'process promoter' if nps > 50 else 'process detractor, flag for follow-up'}"
         })
 
-    # Sort by magnitude
     contributions.sort(key=lambda x: abs(x["magnitude"]), reverse=True)
     return contributions[:6]
 
 
 def get_recommendations(prob, row_df, jump, salary_pct):
-    """Return risk level and tailored recommendations."""
     row = row_df.iloc[0]
 
     if prob >= 0.70:
@@ -405,11 +394,11 @@ st.markdown("""
 st.markdown('<h1 class="hero-title">Offer Acceptance Predictor</h1>', unsafe_allow_html=True)
 st.markdown("""
 <p class="hero-sub">
-  Enter a candidate's profile to receive an instant acceptance probability,
+  Enter a candidate profile to receive an instant acceptance probability,
   risk classification, feature-level contribution breakdown, and
   evidence-based recruiter recommendations.<br>
   <span style="font-size:12px;color:#aaa;">
-    Built on a Random Forest model trained across 2,000 candidates ·
+    Built on a Random Forest model trained across 2,000 anonymised candidate records ·
     75% accuracy · Grounded in behavioural economics
   </span>
 </p>
@@ -506,10 +495,11 @@ with col_left:
         relocation    = st.checkbox("Relocation required")
         visa          = st.checkbox("Visa / work permit required")
 
-    has_tech = st.checkbox("Technical test completed")
+    # UPDATED: Domain assessment instead of technical test
+    has_tech = st.checkbox("Domain assessment completed")
     tech_score = 0.0
     if has_tech:
-        tech_score = st.slider("Technical test score (0–100)", 0.0, 100.0, 68.0, 1.0)
+        tech_score = st.slider("Domain assessment score (0–100)", 0.0, 100.0, 68.0, 1.0)
 
     st.markdown("<br>", unsafe_allow_html=True)
     predict_btn = st.button("Run prediction")
@@ -524,32 +514,31 @@ with col_right:
     if predict_btn:
 
         vals = {
-            "current_level":          current_level,
-            "offered_level":          offered_level,
-            "years_experience":       years_exp,
-            "months_in_current_role": months_role,
-            "notice_period_days":     notice_period,
-            "current_salary":         current_salary,
-            "offered_salary":         offered_salary,
-            "remote_policy_match":    remote_match,
-            "interview_score":        interview_score,
-            "recruiter_sentiment":    recruiter_sent,
+            "current_level":            current_level,
+            "offered_level":            offered_level,
+            "years_experience":         years_exp,
+            "months_in_current_role":   months_role,
+            "notice_period_days":       notice_period,
+            "current_salary":           current_salary,
+            "offered_salary":           offered_salary,
+            "remote_policy_match":      remote_match,
+            "interview_score":          interview_score,
+            "recruiter_sentiment":      recruiter_sent,
             "hiring_manager_sentiment": hm_sent,
-            "process_length_days":    process_days,
-            "response_time_hours":    response_hours,
-            "competing_offers":       competing,
-            "employer_brand_score":   employer_brand,
-            "technical_test_score":   tech_score,
-            "candidate_nps":          candidate_nps,
-            "relocation_required":    relocation,
-            "visa_required":          visa,
-            "has_tech_test":          has_tech,
+            "process_length_days":      process_days,
+            "response_time_hours":      response_hours,
+            "competing_offers":         competing,
+            "employer_brand_score":     employer_brand,
+            "technical_test_score":     tech_score,
+            "candidate_nps":            candidate_nps,
+            "relocation_required":      relocation,
+            "visa_required":            visa,
+            "has_tech_test":            has_tech,
         }
 
         row_df, salary_pct, jump, stage_drop = build_input(vals)
         prob = model.predict_proba(row_df)[0][1]
 
-        # ── Probability display ──────────────────────────────
         st.markdown('<p class="section-label">Prediction result</p>', unsafe_allow_html=True)
 
         prob_pct = int(round(prob * 100))
@@ -576,7 +565,6 @@ with col_right:
         </div>
         """, unsafe_allow_html=True)
 
-        # Three quick-stats
         qs1, qs2, qs3 = st.columns(3)
         with qs1:
             jump_label = (
@@ -604,7 +592,6 @@ with col_right:
               </div>
             </div>""", unsafe_allow_html=True)
 
-        # ── Feature contributions ────────────────────────────
         st.markdown(
             '<p class="section-label" style="margin-top:1.25rem;">What is driving this prediction</p>',
             unsafe_allow_html=True
@@ -633,7 +620,6 @@ with col_right:
               <span style="font-size:12px;color:#666;">{c['detail']}</span>
             </div>""", unsafe_allow_html=True)
 
-        # ── Recruiter recommendations ────────────────────────
         st.markdown(
             '<p class="section-label" style="margin-top:1.25rem;">Recruiter recommendations</p>',
             unsafe_allow_html=True
@@ -651,7 +637,6 @@ with col_right:
           </ul>
         </div>""", unsafe_allow_html=True)
 
-        # Behavioural science note
         if prob < 0.50 and vals["competing_offers"]:
             bs_note = ("BATNA is active. The candidate is no longer evaluating your offer "
                        "— they are comparing two offers. At this point, salary alone rarely "
@@ -681,7 +666,6 @@ with col_right:
         </div>""", unsafe_allow_html=True)
 
     else:
-        # Placeholder before prediction
         st.markdown("""
         <div style="
             background:white;
@@ -713,18 +697,18 @@ st.markdown("""
       Built by
       <a href="https://solomonobie.com" target="_blank"
          style="color:#1A1A1A;text-decoration:none;font-weight:500;">
-        Solomon F Torèn
+        Solomon Obiechina
       </a>
       · Senior Talent Partner · Talent Scientist
     </span>
   </div>
   <div style="display:flex;gap:16px;">
-    <a href="https://github.com/solomonbie/offer-acceptance-predictor"
+    <a href="https://github.com/solomonbie/Candidate-offer-acceptance-predictor"
        target="_blank"
        style="font-size:12px;color:#999;text-decoration:none;">
       GitHub →
     </a>
-    <a href="https://solomonobie.com/projects/offer-acceptance-modelling"
+    <a href="https://solomonobie.com/case-study/offer-acceptance-modelling"
        target="_blank"
        style="font-size:12px;color:#999;text-decoration:none;">
       Full case study →
@@ -732,8 +716,8 @@ st.markdown("""
   </div>
 </div>
 <p style="font-size:11px;color:#bbb;margin-top:0.5rem;">
-  This tool uses a Random Forest model trained on anonymized recruitment data.
-  No candidate data is stored or transmitted. For portfolio, opensource and
-  educational use.
+  This tool uses a Random Forest model trained on 2,000 anonymised candidate
+  records. No candidate data is stored or transmitted. Free to use — no login
+  required. Built for portfolio, open source, and educational use.
 </p>
 """, unsafe_allow_html=True)
