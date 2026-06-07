@@ -386,7 +386,7 @@ def get_recommendations(prob, row_df, jump, salary_pct):
 st.markdown("""
 <div style="margin-bottom:0.25rem;">
   <span style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#999;">
-    Solomon Obiechina · Talent Science
+    Solomon Fredrick · Talent Partner
   </span>
 </div>
 """, unsafe_allow_html=True)
