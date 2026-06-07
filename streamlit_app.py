@@ -3,22 +3,19 @@ import pandas as pd
 import numpy as np
 import joblib
 import os
-import streamlit.components.v1 as components
 
 # ── Google Analytics ──────────────────────────────────────────
 def inject_ga():
-    components.html("""
+    st.markdown("""
+    <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-TK23Y5CN23"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', 'G-TK23Y5CN23', {
-            'page_title': 'Offer Acceptance Predictor',
-            'page_location': 'https://candidate-offer-acceptance-predictor.streamlit.app'
-        });
+        gtag('config', 'G-TK23Y5CN23');
     </script>
-    """, height=0, scrolling=False)
+    """, unsafe_allow_html=True)
 
 inject_ga()
 
@@ -579,7 +576,7 @@ def get_science_note(prob, vals, jump, salary_pct, stage_drop):
 st.markdown("""
 <div style="margin-bottom:0.25rem;">
   <span style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#999;">
-    Solomon Obiechina · Talent Science
+    Solomon Fredrick · Talent Partner/Scientist
   </span>
 </div>
 """, unsafe_allow_html=True)
@@ -732,8 +729,8 @@ with col_right:
         prob = model.predict_proba(row_df)[0][1]
 
         # ── Track prediction event in Google Analytics ───────
-        risk_label = "low" if prob >= 0.70 else "medium" if prob >= 0.50 else "high"
-        components.html(f"""
+       risk_label = "low" if prob >= 0.70 else "medium" if prob >= 0.50 else "high"
+        st.markdown(f"""
         <script>
             window.dataLayer = window.dataLayer || [];
             function gtag(){{dataLayer.push(arguments);}}
@@ -744,7 +741,7 @@ with col_right:
                 'probability': {round(prob * 100)}
             }});
         </script>
-        """, height=0, scrolling=False)
+        """, unsafe_allow_html=True)
 
         # ── Probability display ──────────────────────────────
         st.markdown('<p class="section-label">Prediction result</p>', unsafe_allow_html=True)
@@ -893,7 +890,7 @@ st.markdown("""
       Built by
       <a href="https://solomonobie.com" target="_blank"
          style="color:#1A1A1A;text-decoration:none;font-weight:500;">
-        Solomon Obiechina
+        Solomon Fredrick
       </a>
       · Senior Talent Partner · Talent Scientist
     </span>
@@ -914,6 +911,6 @@ st.markdown("""
 <p style="font-size:11px;color:#bbb;margin-top:0.5rem;">
   This tool uses a Random Forest model trained on 2,000 anonymised candidate
   records. No candidate data is stored or transmitted. Free to use — no login
-  required. Built for portfolio, open source, and educational use.
+  required. Built for TA expert and Hiring Managers, open source, and educational use.
 </p>
 """, unsafe_allow_html=True)
