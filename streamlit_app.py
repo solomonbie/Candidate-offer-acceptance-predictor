@@ -7,7 +7,6 @@ import os
 # ── Google Analytics ──────────────────────────────────────────
 def inject_ga():
     st.markdown("""
-    <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-TK23Y5CN23"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -167,11 +166,12 @@ def compute_stage_drop_risk(response_hours, recruiter_sent, process_days, compet
         3
     )
 
+
 def build_input(vals):
     level_map = {"Junior":1, "Mid":2, "Senior":3, "Lead":4, "Director":5}
-    cur_num = level_map[vals["current_level"]]
-    off_num = level_map[vals["offered_level"]]
-    jump    = off_num - cur_num
+    cur_num   = level_map[vals["current_level"]]
+    off_num   = level_map[vals["offered_level"]]
+    jump      = off_num - cur_num
 
     stage_drop = compute_stage_drop_risk(
         vals["response_time_hours"],
@@ -180,8 +180,10 @@ def build_input(vals):
         vals["competing_offers"]
     )
 
-    salary_pct = ((vals["offered_salary"] - vals["current_salary"])
-                  / vals["current_salary"] * 100) if vals["current_salary"] > 0 else 0
+    salary_pct = (
+        (vals["offered_salary"] - vals["current_salary"])
+        / vals["current_salary"] * 100
+    ) if vals["current_salary"] > 0 else 0
 
     row = {
         "seniority_jump":            jump,
@@ -215,85 +217,85 @@ def build_input(vals):
 
 def get_feature_contributions(row_df, prob):
     importances = dict(zip(feature_names, model.feature_importances_))
-    row = row_df.iloc[0]
+    row         = row_df.iloc[0]
     contributions = []
 
-    sal = row.get("salary_increase_pct", 0)
+    sal     = row.get("salary_increase_pct", 0)
     sal_dir = 1 if sal > 10 else (-1 if sal < 0 else 0)
     sal_mag = min(abs(sal) / 30, 1.0) * importances.get("salary_increase_pct", 0)
     if sal_dir != 0:
         contributions.append({
-            "feature": "Salary increase",
+            "feature":   "Salary increase",
             "direction": sal_dir,
             "magnitude": sal_mag,
-            "detail": f"{sal:.1f}% lift — {'strong pull' if sal > 20 else 'modest lift' if sal > 10 else 'at-risk territory'}"
+            "detail":    f"{sal:.1f}% lift — {'strong pull' if sal > 20 else 'modest lift' if sal > 10 else 'at-risk territory'}"
         })
 
     jump = row.get("seniority_jump", 0)
     if jump != 0:
         contributions.append({
-            "feature": "Career trajectory",
+            "feature":   "Career trajectory",
             "direction": 1 if jump > 0 else -1,
             "magnitude": min(abs(jump) / 2, 1.0) * importances.get("seniority_jump", 0),
-            "detail": f"{'Promotion offer' if jump > 0 else 'Step down'} ({'+' if jump > 0 else ''}{jump} level{'s' if abs(jump) > 1 else ''})"
+            "detail":    f"{'Promotion offer' if jump > 0 else 'Step down'} ({'+' if jump > 0 else ''}{jump} level{'s' if abs(jump) > 1 else ''})"
         })
 
-    sdr = row.get("stage_drop_risk", 0)
+    sdr     = row.get("stage_drop_risk", 0)
     sdr_dir = -1 if sdr > 0.4 else (1 if sdr < 0.2 else 0)
     if sdr_dir != 0:
         contributions.append({
-            "feature": "Engagement signal",
+            "feature":   "Engagement signal",
             "direction": sdr_dir,
             "magnitude": min(sdr, 1.0) * importances.get("stage_drop_risk", 0),
-            "detail": f"Stage drop risk: {sdr:.3f} — {'high concern' if sdr > 0.5 else 'moderate concern' if sdr > 0.3 else 'low concern'}"
+            "detail":    f"Stage drop risk: {sdr:.3f} — {'high concern' if sdr > 0.5 else 'moderate concern' if sdr > 0.3 else 'low concern'}"
         })
 
-    proc = row.get("process_length_days", 30)
+    proc     = row.get("process_length_days", 30)
     proc_dir = 1 if proc < 21 else (-1 if proc > 55 else 0)
     if proc_dir != 0:
         contributions.append({
-            "feature": "Process speed",
+            "feature":   "Process speed",
             "direction": proc_dir,
             "magnitude": min(proc / 90, 1.0) * importances.get("process_length_days", 0),
-            "detail": f"{proc} days — {'fast process, positive signal' if proc < 21 else 'slow process, reducing pull'}"
+            "detail":    f"{proc} days — {'fast process, positive signal' if proc < 21 else 'slow process, reducing pull'}"
         })
 
     if row.get("competing_offers", 0) == 1:
         contributions.append({
-            "feature": "Competing offer",
+            "feature":   "Competing offer",
             "direction": -1,
             "magnitude": importances.get("competing_offers", 0) * 1.5,
-            "detail": "BATNA active — candidate is comparing, not deciding"
+            "detail":    "BATNA active — candidate is comparing, not deciding"
         })
 
-    hm = row.get("hiring_manager_sentiment", 3)
+    hm     = row.get("hiring_manager_sentiment", 3)
     hm_dir = 1 if hm >= 4 else (-1 if hm <= 2.5 else 0)
     if hm_dir != 0:
         contributions.append({
-            "feature": "HM impression",
+            "feature":   "HM impression",
             "direction": hm_dir,
             "magnitude": ((hm - 3) / 2) * importances.get("hiring_manager_sentiment", 0),
-            "detail": f"HM sentiment {hm}/5 — {'strong human connection' if hm >= 4 else 'weak connection, risk factor'}"
+            "detail":    f"HM sentiment {hm}/5 — {'strong human connection' if hm >= 4 else 'weak connection, risk factor'}"
         })
 
-    months = row.get("months_in_current_role", 24)
+    months     = row.get("months_in_current_role", 24)
     months_dir = 1 if months > 36 else (-1 if months < 12 else 0)
     if months_dir != 0:
         contributions.append({
-            "feature": "Tenure readiness",
+            "feature":   "Tenure readiness",
             "direction": months_dir,
             "magnitude": min(months / 84, 1.0) * importances.get("months_in_current_role", 0),
-            "detail": f"{months} months in role — {'ready to move' if months > 36 else 'reluctant mover, under 12 months'}"
+            "detail":    f"{months} months in role — {'ready to move' if months > 36 else 'reluctant mover, under 12 months'}"
         })
 
-    nps = row.get("candidate_nps", 0)
+    nps     = row.get("candidate_nps", 0)
     nps_dir = 1 if nps > 50 else (-1 if nps < 0 else 0)
     if nps_dir != 0:
         contributions.append({
-            "feature": "Process NPS",
+            "feature":   "Process NPS",
             "direction": nps_dir,
             "magnitude": abs(nps / 100) * importances.get("candidate_nps", 0),
-            "detail": f"NPS {nps} — {'process promoter' if nps > 50 else 'process detractor, flag for follow-up'}"
+            "detail":    f"NPS {nps} — {'process promoter' if nps > 50 else 'process detractor, flag for follow-up'}"
         })
 
     contributions.sort(key=lambda x: abs(x["magnitude"]), reverse=True)
@@ -310,12 +312,11 @@ def get_recommendations(prob, row_df, jump, salary_pct):
             "Confirm verbal acceptance in a personal call before issuing the written "
             "offer letter. Never let the written offer be the first time the candidate "
             "hears the number.",
-            "Brief the hiring manager with these three things before the offer call: "
+            "Brief the hiring manager with three things before the offer call: "
             "the candidate's stated career motivators, their current timeline, and "
             "any concerns raised during the process. The HM should not go in blind.",
-            "Set a clear and reasonable offer deadline — 5 to 7 business days. "
-            "An open-ended offer creates uncertainty and invites competing offers "
-            "to fill the vacuum.",
+            "Set a clear offer deadline — 5 to 7 business days. An open-ended offer "
+            "creates uncertainty and invites competing offers to fill the vacuum.",
             "Lead the offer narrative with career trajectory and role impact first. "
             "Introduce the compensation package second. Candidates who feel excited "
             "about the role negotiate less aggressively on salary.",
@@ -333,41 +334,35 @@ def get_recommendations(prob, row_df, jump, salary_pct):
         title = "Medium risk — intervene before extending"
         actions = [
             "Do not extend the written offer without a pre-offer conversation. "
-            "Call the candidate — not email — and open with: 'Before I send anything "
-            "formal, I want to make sure we have answered everything for you. "
+            "Call the candidate and open with: 'Before I send anything formal, "
+            "I want to make sure we have answered everything for you. "
             "Is there anything that would make this decision difficult?'",
             "This single question surfaces unstated objections that no offer letter "
             "can address. The most common answers are: competing offer, partner "
-            "concerns, relocation anxiety, or uncertainty about the team. All of "
-            "these are recoverable — but only if you know about them before the offer.",
+            "concerns, relocation anxiety, or uncertainty about the team. All "
+            "recoverable — but only if you know before the offer.",
             "Bring the hiring manager into the closing conversation directly. "
             "At medium risk, HM rapport is your strongest lever. A genuine personal "
-            "call from the HM — not a forwarded email — can move a hesitant candidate "
-            "more than any salary adjustment.",
+            "call from the HM can move a hesitant candidate more than any salary "
+            "adjustment.",
         ]
         if salary_pct < 12:
             actions.append(
                 f"Salary lift is {salary_pct:.1f}% — below the 12% threshold where "
-                "acceptance risk increases significantly. Before extending, explore "
-                "whether the compensation band has any flex. Even a 3 to 4% increase "
-                "from an initial position can shift the candidate's perception of "
-                "being valued, independent of the absolute number."
+                "acceptance risk increases significantly. Explore whether the "
+                "compensation band has any flex before extending."
             )
         if row.get("competing_offers", 0) == 1:
             actions.append(
                 "Competing offer is active. Ask the candidate directly: 'What is "
                 "the other offer doing that this one is not?' Listen without defending. "
-                "Then decide whether to differentiate on compensation, career scope, "
-                "flexibility, speed, or team quality. Trying to win on all dimensions "
-                "signals desperation. Pick the one where you are genuinely stronger."
+                "Pick the dimension where you are genuinely stronger and make that case."
             )
         if jump <= 0:
             actions.append(
-                "This is a lateral or step-down offer. The financial case must be "
-                "compelling because the career trajectory case is not. Alternatively, "
-                "reframe the conversation around non-compensation value: brand, "
-                "stability, learning environment, team quality, and long-term "
-                "trajectory beyond this role."
+                "This is a lateral or step-down offer. Reframe the conversation around "
+                "non-compensation value: brand, stability, learning environment, "
+                "team quality, and long-term trajectory beyond this role."
             )
 
     else:
@@ -375,43 +370,32 @@ def get_recommendations(prob, row_df, jump, salary_pct):
         title = "High risk — pause and reassess before extending"
         actions = [
             "Do not extend this offer without a full pre-offer debrief with the "
-            "hiring manager. Align on what you know about the candidate's hesitation, "
-            "what levers are available, and what the cost of a decline would be "
-            "versus the cost of strengthening the offer now.",
-            "Identify the primary risk driver from the signal breakdown above. "
-            "Address that specific driver in the pre-offer conversation — do not "
-            "try to address everything at once. One well-addressed concern is more "
-            "effective than five partially addressed ones.",
+            "hiring manager. Align on what levers are available and what the cost "
+            "of a decline would be versus strengthening the offer now.",
+            "Identify the primary risk driver from the signal breakdown and address "
+            "that specific driver in the pre-offer conversation. One well-addressed "
+            "concern is more effective than five partially addressed ones.",
             "Explore whether title, scope, start date flexibility, signing bonus, "
-            "or remote arrangement can compensate for a weaker base salary package. "
-            "Total compensation is broader than the monthly number.",
-            "If the process has taken more than 55 days, acknowledge it directly "
-            "before the offer. 'I know this took longer than we would have liked — "
-            "I want to make sure we make it worth the wait.' Transparency about "
-            "process friction rebuilds more trust than ignoring it.",
+            "or remote arrangement can compensate for a weaker base salary.",
+            "If the process has taken more than 55 days, acknowledge it directly: "
+            "'I know this took longer than we would have liked — I want to make "
+            "sure we make it worth the wait.' Transparency rebuilds trust.",
         ]
         if row.get("stage_drop_risk", 0) > 0.5:
             actions.append(
                 "Stage drop risk is critically high. The candidate's engagement "
                 "pattern suggests a possible silent withdrawal is already in progress. "
-                "Before the formal offer, make direct personal contact — the recruiter "
-                "and ideally the hiring manager — to re-establish connection and "
-                "confirm genuine interest. Do not send a written offer into silence."
+                "Make direct personal contact before sending any written offer."
             )
         if row.get("months_in_current_role", 24) < 12:
             actions.append(
-                "This candidate has been in their current role under 12 months. "
-                "This is the single strongest structural indicator of a reluctant mover. "
-                "Manage the hiring manager's expectations on close probability "
-                "explicitly and document the risk in your pipeline notes. "
-                "If the offer is declined, this signal should be factored into "
-                "sourcing strategy for future roles."
+                "This candidate has been in their current role under 12 months — "
+                "the single strongest structural indicator of a reluctant mover. "
+                "Manage the hiring manager's expectations on close probability explicitly."
             )
         actions.append(
-            "Document the predicted decline risk in your ATS with the key signals "
-            "driving it. If the offer is declined, this becomes valuable calibration "
-            "data for future hiring on similar roles. Every declined offer, properly "
-            "documented, makes the next prediction more accurate."
+            "Document the predicted decline risk in your ATS. If the offer is declined, "
+            "this becomes valuable calibration data for future hiring on similar roles."
         )
 
     return risk, title, actions
@@ -430,14 +414,12 @@ def get_science_note(prob, vals, jump, salary_pct, stage_drop):
             "whether to join you. They are comparing two options. Behavioural economics calls "
             "this the BATNA effect: once a person has a Best Alternative To a Negotiated "
             "Agreement, their entire reference point shifts. Your offer is no longer evaluated "
-            "on its own merits — it is evaluated against the alternative. The perceived value "
-            "of your offer can drop significantly even if the offer itself has not changed, "
-            "simply because the comparison now exists.<br><br>"
+            "on its own merits — it is evaluated against the alternative.<br><br>"
             "<strong>What this means for the recruiter:</strong> Stop selling the role. "
             "Start differentiating it. Ask the candidate directly what the competing offer "
             "is doing that yours is not — then decide whether to compete on compensation, "
-            "career trajectory, flexibility, or speed. Trying to win on all four rarely works. "
-            "Pick the dimension where you are genuinely stronger and make that case clearly."
+            "career trajectory, flexibility, or speed. Pick the dimension where you are "
+            "genuinely stronger and make that case clearly."
         )
     elif months_in_role < 12:
         return (
@@ -446,16 +428,12 @@ def get_science_note(prob, vals, jump, salary_pct, stage_drop):
             "career transition psychology shows that people who have recently started a role "
             "are psychologically anchored to it — they have not yet reached the natural "
             "inflection point where dissatisfaction or ambition outweighs the comfort of "
-            "familiarity. The sunk cost of having just made a career move also makes another "
-            "move feel irrational to many candidates, even when the new offer is objectively "
-            "better. This is not a compensation problem. It is a timing and readiness problem.<br><br>"
+            "familiarity. This is not a compensation problem. It is a timing and readiness "
+            "problem.<br><br>"
             "<strong>What this means for the recruiter:</strong> This is a structurally harder "
-            "close regardless of offer quality. Rather than pushing harder on compensation, "
-            "explore what motivated the candidate to engage with this process at all — that "
-            "signal is your leverage. And manage the hiring manager's expectations on close "
-            "probability explicitly before the offer goes out. A declined offer here is not "
-            "a failure of the offer — it is a function of where the candidate is in their "
-            "career cycle."
+            "close regardless of offer quality. Explore what motivated the candidate to engage "
+            "with this process at all — that signal is your leverage. Manage the hiring "
+            "manager's expectations on close probability explicitly before the offer goes out."
         )
     elif jump >= 2:
         return (
@@ -463,91 +441,66 @@ def get_science_note(prob, vals, jump, salary_pct, stage_drop):
             "A two-level promotion offer triggers something more powerful than financial "
             "calculation — it activates the candidate's future identity. Research by Oyserman "
             "shows that people are strongly motivated to act in ways consistent with who they "
-            "see themselves becoming, not just who they are today. When a candidate is offered "
-            "a Director role from a Senior position, the offer is not just about money — it is "
-            "about becoming a different version of themselves. This is a non-compensatory "
+            "see themselves becoming, not just who they are today. This is a non-compensatory "
             "motivator: it cannot be fully substituted by a salary increase because it operates "
-            "in a different psychological domain entirely. A candidate excited by the identity "
-            "of the new role is more committed, negotiates less aggressively, and is more "
-            "resistant to counter-offers from their current employer.<br><br>"
+            "in a different psychological domain entirely.<br><br>"
             "<strong>What this means for the recruiter:</strong> Lead with the title, the scope, "
-            "and the narrative of what this role makes possible for the candidate's career — not "
-            "the compensation package. Open the offer call with career, not salary. Save the "
-            "numbers for when they ask. The identity hook must land first."
+            "and the narrative of what this role makes possible for the candidate's career. "
+            "Open the offer call with career, not salary. Save the numbers for when they ask."
         )
     elif stage_drop > 0.45:
         return (
             "<strong>Engagement decay and temporal discounting</strong><br><br>"
-            "This candidate's engagement signals — response time, recruiter sentiment, and "
-            "process length — suggest that initial enthusiasm may have decayed during the "
-            "hiring process. Behavioural science research on temporal discounting shows that "
-            "the perceived value of a future reward decreases the longer a person must wait "
-            "for it. A candidate who was genuinely excited at week two may be significantly "
-            "less emotionally invested at week eight — not because the role changed, but "
-            "because the waiting eroded the emotional pull. Slow responses from the candidate "
-            "are often a symptom of this decay rather than a cause of it.<br><br>"
+            "This candidate's engagement signals suggest that initial enthusiasm may have "
+            "decayed during the hiring process. Behavioural science research on temporal "
+            "discounting shows that the perceived value of a future reward decreases the "
+            "longer a person must wait for it. A candidate excited at week two may be "
+            "significantly less invested at week eight — not because the role changed, "
+            "but because the wait eroded the emotional pull.<br><br>"
             "<strong>What this means for the recruiter:</strong> Before the offer call, "
-            "re-engage the candidate personally. A direct call from the hiring manager — "
-            "not the recruiter — to express genuine enthusiasm about having them join can "
-            "partially reverse engagement decay. The message should be warm and specific: "
-            "reference something from the interview, name what excites the team about this "
-            "person. Do not let the offer letter be the first contact after a long silence."
+            "re-engage the candidate personally. A direct call from the hiring manager "
+            "expressing genuine enthusiasm can partially reverse engagement decay. "
+            "Do not let the offer letter be the first contact after a long silence."
         )
     elif hm_score < 3.5 and prob < 0.65:
         return (
             "<strong>Interpersonal fit and future work experience signalling</strong><br><br>"
             "The hiring manager sentiment score is lower than the threshold associated with "
             "confident acceptance. Research consistently shows that candidates use the quality "
-            "of their relationship with the hiring manager during the interview process as a "
-            "direct proxy for what it will be like to work for that person every day. A lukewarm "
-            "HM impression does not just reduce sentiment scores — it creates a negative forecast "
-            "of the daily work experience. Candidates rarely articulate this concern directly. "
-            "They express it as vague hesitation, slow responses, or a request for more time "
-            "to consider.<br><br>"
+            "of their relationship with the hiring manager during interviews as a direct proxy "
+            "for what it will be like to work for that person every day. A lukewarm HM "
+            "impression creates a negative forecast of the daily work experience.<br><br>"
             "<strong>What this means for the recruiter:</strong> Before extending the offer, "
-            "arrange an informal touchpoint between the candidate and the hiring manager — a "
-            "coffee conversation, a brief team call, or even a warm personal message from the "
-            "HM referencing something specific from the interview. The goal is to create a "
-            "warmer final impression before the decision moment. A candidate who feels genuinely "
-            "wanted by the person they will work for is significantly more likely to accept."
+            "arrange an informal touchpoint between the candidate and the hiring manager. "
+            "A warm personal message from the HM referencing something specific from the "
+            "interview can create a meaningfully warmer final impression before the decision."
         )
     elif nps_score < 0:
         return (
             "<strong>Process experience as a culture signal (Talent Board, 2024)</strong><br><br>"
             "This candidate has rated the hiring process negatively. Research from Talent Board "
-            "and IBM's Smarter Workforce Institute consistently shows that candidates use the "
-            "recruitment experience as a direct proxy for organisational culture. The assumption "
-            "— often unconscious — is that how a company treats a candidate during hiring "
-            "reflects how it will treat them as an employee. A negative NPS score suggests the "
-            "candidate has already updated their beliefs about the organisation in a negative "
-            "direction. This is a serious risk factor because it operates independently of offer "
-            "quality: a candidate with a poor process impression may decline even a strong offer "
-            "because they have already decided the organisation is not what they hoped.<br><br>"
-            "<strong>What this means for the recruiter:</strong> Acknowledge the friction before "
-            "making the offer. A brief honest conversation — 'I know parts of this process took "
-            "longer than we would have liked, and I want to address that directly' — combined "
-            "with a genuine description of what onboarding and the first 90 days will look like, "
-            "can partially reverse a negative process impression. Silence about the friction "
-            "makes it significantly worse."
+            "and IBM's Smarter Workforce Institute shows that candidates use the recruitment "
+            "experience as a direct proxy for organisational culture. A negative NPS score "
+            "suggests the candidate has already updated their beliefs about the organisation "
+            "in a negative direction — independently of offer quality.<br><br>"
+            "<strong>What this means for the recruiter:</strong> Acknowledge the friction "
+            "before making the offer. A brief honest conversation about what the onboarding "
+            "and first 90 days will look like can partially reverse a negative process "
+            "impression. Silence about the friction makes it significantly worse."
         )
     elif salary_pct < 8:
         return (
             "<strong>Prospect theory and reference point anchoring "
             "(Kahneman &amp; Tversky, 1979)</strong><br><br>"
-            "Prospect theory demonstrates that people evaluate gains and losses relative to a "
-            "reference point — in this case the candidate's current salary. A lift below 8% is "
-            "unlikely to feel like a meaningful gain once the disruption of changing jobs, the "
-            "social cost of leaving a team, and the uncertainty of a new environment are factored "
-            "in. Candidates do not calculate net financial benefit rationally. They feel whether "
-            "the gain is worth the effort of moving. Below a certain threshold — typically around "
-            "10% — the gain simply does not feel sufficient to justify the friction of a career "
-            "move, even when the role itself is attractive.<br><br>"
-            "<strong>What this means for the recruiter:</strong> If the salary cannot flex, the "
-            "non-financial value of the offer must be made explicit and compelling. Equity, bonus "
-            "structure, learning budget, title change, flexibility, and career acceleration are "
-            "all part of total compensation in the candidate's perception — but only if the "
-            "recruiter names them clearly and attaches concrete value to each. Do not assume "
-            "the candidate will calculate these independently."
+            "Prospect theory demonstrates that people evaluate gains and losses relative to "
+            "a reference point — in this case the candidate's current salary. A lift below 8% "
+            "is unlikely to feel like a meaningful gain once the disruption of changing jobs "
+            "and the uncertainty of a new environment are factored in. Below a certain "
+            "threshold the gain simply does not feel worth the friction of moving.<br><br>"
+            "<strong>What this means for the recruiter:</strong> If the salary cannot flex, "
+            "the non-financial value must be made explicit. Equity, bonus, learning budget, "
+            "title change, flexibility, and career acceleration are all part of total "
+            "compensation — but only if the recruiter names them clearly."
         )
     else:
         return (
@@ -555,17 +508,13 @@ def get_science_note(prob, vals, jump, salary_pct, stage_drop):
             "(Kahneman &amp; Tversky, 1979)</strong><br><br>"
             "Candidates do not evaluate offers in absolute terms — they evaluate them relative "
             "to where they currently are. This is the core insight of prospect theory: people "
-            "respond to perceived gains and losses from a personal reference point, not to "
-            "objective financial outcomes. A 15% salary lift feels meaningfully different to "
-            "someone earning 400,000 SEK than to someone earning 900,000 SEK, even if the "
-            "absolute number is identical. The emotional perception of gain matters more than "
-            "the gain itself — and that perception is shaped as much by how the offer is "
-            "framed as by what the offer contains.<br><br>"
+            "respond to perceived gains from a personal reference point, not to objective "
+            "outcomes. The emotional perception of gain matters more than the gain itself — "
+            "and that perception is shaped as much by how the offer is framed as by what "
+            "the offer contains.<br><br>"
             "<strong>What this means for the recruiter:</strong> Frame the offer conversation "
             "around what the candidate is gaining — career progression, new challenges, team "
-            "quality, autonomy, and impact — not just what they are being paid. The emotional "
-            "framing of the offer call influences the final decision as much as the numbers do. "
-            "Lead with the narrative. Close with the package."
+            "quality, autonomy, and impact. Lead with the narrative. Close with the package."
         )
 
 
@@ -576,7 +525,7 @@ def get_science_note(prob, vals, jump, salary_pct, stage_drop):
 st.markdown("""
 <div style="margin-bottom:0.25rem;">
   <span style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#999;">
-    Solomon Fredrick · Talent Partner/Scientist
+    Solomon Fredrick · Talent Partner &amp; Talent Scientist
   </span>
 </div>
 """, unsafe_allow_html=True)
@@ -584,12 +533,12 @@ st.markdown("""
 st.markdown('<h1 class="hero-title">Offer Acceptance Predictor</h1>', unsafe_allow_html=True)
 st.markdown("""
 <p class="hero-sub">
+  A decision support tool for Talent Acquisition professionals and Hiring Managers.
   Enter a candidate profile to receive an instant acceptance probability,
-  risk classification, feature-level contribution breakdown, and
-  evidence-based recruiter recommendations.<br>
+  risk classification, signal breakdown, and evidence-based recommendations.<br>
   <span style="font-size:12px;color:#aaa;">
-    Built on a Random Forest model trained across 2,000 anonymised candidate records ·
-    75% accuracy · Grounded in behavioural economics
+    Random Forest model · 2,000 anonymised candidate records · 75% accuracy ·
+    Grounded in behavioural economics
   </span>
 </p>
 """, unsafe_allow_html=True)
@@ -728,8 +677,8 @@ with col_right:
         row_df, salary_pct, jump, stage_drop = build_input(vals)
         prob = model.predict_proba(row_df)[0][1]
 
-        # ── Track prediction event in Google Analytics ───────
-       risk_label = "low" if prob >= 0.70 else "medium" if prob >= 0.50 else "high"
+        # ── GA prediction event ──────────────────────────────
+        risk_label = "low" if prob >= 0.70 else "medium" if prob >= 0.50 else "high"
         st.markdown(f"""
         <script>
             window.dataLayer = window.dataLayer || [];
@@ -770,7 +719,6 @@ with col_right:
         </div>
         """, unsafe_allow_html=True)
 
-        # Three quick-stats
         qs1, qs2, qs3 = st.columns(3)
         with qs1:
             jump_label = (
@@ -790,10 +738,11 @@ with col_right:
               <div style="font-size:1rem;font-weight:500;color:{bar_col};">{salary_pct:+.1f}%</div>
             </div>""", unsafe_allow_html=True)
         with qs3:
+            sdr_col = '#E24B4A' if stage_drop > 0.4 else '#EF9F27' if stage_drop > 0.25 else '#1D9E75'
             st.markdown(f"""
             <div class="metric-card" style="padding:0.85rem 1rem;">
               <div class="metric-label">Stage drop risk</div>
-              <div style="font-size:1rem;font-weight:500;color:{'#E24B4A' if stage_drop > 0.4 else '#EF9F27' if stage_drop > 0.25 else '#1D9E75'};">
+              <div style="font-size:1rem;font-weight:500;color:{sdr_col};">
                 {stage_drop:.3f}
               </div>
             </div>""", unsafe_allow_html=True)
@@ -872,10 +821,11 @@ with col_right:
             <p style="font-size:15px;font-weight:500;color:#1A1A1A;margin-bottom:0.5rem;">
                 Ready to predict
             </p>
-            <p style="font-size:13px;color:#888;line-height:1.7;max-width:280px;margin:0 auto;">
+            <p style="font-size:13px;color:#888;line-height:1.7;max-width:300px;margin:0 auto;">
                 Fill in the candidate profile on the left and click
                 <strong>Run prediction</strong> to get an instant
-                acceptance probability with full breakdown.
+                acceptance probability with full breakdown and
+                recruiter recommendations.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -892,7 +842,8 @@ st.markdown("""
          style="color:#1A1A1A;text-decoration:none;font-weight:500;">
         Solomon Fredrick
       </a>
-      · Senior Talent Partner · Talent Scientist
+      · Talent Partner &amp; Talent Scientist ·
+      Created for TA experts and Hiring Managers
     </span>
   </div>
   <div style="display:flex;gap:16px;">
@@ -911,6 +862,6 @@ st.markdown("""
 <p style="font-size:11px;color:#bbb;margin-top:0.5rem;">
   This tool uses a Random Forest model trained on 2,000 anonymised candidate
   records. No candidate data is stored or transmitted. Free to use — no login
-  required. Built for TA expert and Hiring Managers, open source, and educational use.
+  required.
 </p>
 """, unsafe_allow_html=True)
